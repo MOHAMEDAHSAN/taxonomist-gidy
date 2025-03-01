@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,8 @@ import { motion } from "framer-motion";
 const GdpCalculator = () => {
   const navigate = useNavigate();
   const [result, setResult] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [inputs, setInputs] = useState({
     unemploymentRate: "",
     personalConsumption: "",
@@ -25,11 +26,59 @@ const GdpCalculator = () => {
     });
   };
 
-  const calculateGDP = () => {
-    // This is a placeholder calculation - will be replaced later
-    const staticMultiplier = 1.5;
-    const sum = Object.values(inputs).reduce((acc, val) => acc + Number(val), 0);
-    setResult(sum * staticMultiplier);
+  const validateInputs = () => {
+    const values = Object.values(inputs);
+    if (values.some(value => value === "")) {
+      setError("All fields are required");
+      return false;
+    }
+    if (values.some(value => isNaN(Number(value)))) {
+      setError("All values must be numbers");
+      return false;
+    }
+    if (Number(inputs.unemploymentRate) < 0 || Number(inputs.unemploymentRate) > 100) {
+      setError("Unemployment rate must be between 0 and 100");
+      return false;
+    }
+    return true;
+  };
+
+  const calculateGDP = async () => {
+    setError(null);
+    if (!validateInputs()) return;
+
+    setIsLoading(true);
+    
+    try {
+      const payload = {
+        unemployment_rate: Number(inputs.unemploymentRate),
+        personal_consumption: Number(inputs.personalConsumption),
+        govt_expenditure: Number(inputs.governmentExpenditure),
+        m1_money_supply: Number(inputs.m1),
+        m2_money_supply: Number(inputs.m2),
+        federal_debt: Number(inputs.federalDebt)
+      };
+
+      const response = await fetch("http://localhost:5000/api/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "API request failed");
+      }
+
+      const data = await response.json();
+      setResult(data.gdp_prediction);
+    } catch (err) {
+      console.error("Calculation error:", err);
+      setError(err.message || "Failed to calculate GDP. Please try again.");
+      setResult(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -70,100 +119,45 @@ const GdpCalculator = () => {
             </div>
 
             <div className="space-y-6">
-              <div>
-                <label className="text-lg font-medium mb-3 block text-primary">
-                  Unemployment Rate (%)
-                </label>
-                <Input
-                  type="number"
-                  name="unemploymentRate"
-                  value={inputs.unemploymentRate}
-                  onChange={handleInputChange}
-                  placeholder="Enter unemployment rate"
-                  step="0.1"
-                  className="text-lg py-6"
-                />
-              </div>
-
-              <div>
-                <label className="text-lg font-medium mb-3 block text-primary">
-                  Personal Consumption Expenditure (₹ Crores)
-                </label>
-                <Input
-                  type="number"
-                  name="personalConsumption"
-                  value={inputs.personalConsumption}
-                  onChange={handleInputChange}
-                  placeholder="Enter personal consumption"
-                  className="text-lg py-6"
-                />
-              </div>
-
-              <div>
-                <label className="text-lg font-medium mb-3 block text-primary">
-                  Government Expenditure (₹ Crores)
-                </label>
-                <Input
-                  type="number"
-                  name="governmentExpenditure"
-                  value={inputs.governmentExpenditure}
-                  onChange={handleInputChange}
-                  placeholder="Enter government expenditure"
-                  className="text-lg py-6"
-                />
-              </div>
-
-              <div>
-                <label className="text-lg font-medium mb-3 block text-primary">
-                  M1 Money Supply (₹ Crores)
-                </label>
-                <Input
-                  type="number"
-                  name="m1"
-                  value={inputs.m1}
-                  onChange={handleInputChange}
-                  placeholder="Enter M1 money supply"
-                  className="text-lg py-6"
-                />
-              </div>
-
-              <div>
-                <label className="text-lg font-medium mb-3 block text-primary">
-                  M2 Money Supply (₹ Crores)
-                </label>
-                <Input
-                  type="number"
-                  name="m2"
-                  value={inputs.m2}
-                  onChange={handleInputChange}
-                  placeholder="Enter M2 money supply"
-                  className="text-lg py-6"
-                />
-              </div>
-
-              <div>
-                <label className="text-lg font-medium mb-3 block text-primary">
-                  Federal Debt (₹ Crores)
-                </label>
-                <Input
-                  type="number"
-                  name="federalDebt"
-                  value={inputs.federalDebt}
-                  onChange={handleInputChange}
-                  placeholder="Enter federal debt"
-                  className="text-lg py-6"
-                />
-              </div>
+              {Object.entries(inputs).map(([key, value]) => (
+                <div key={key}>
+                  <label className="text-lg font-medium mb-3 block text-primary">
+                    {key.split(/(?=[A-Z])/).join(' ').replace(/M(\d)/, 'M$1 ')}
+                    {key === 'unemploymentRate' && ' (%)'}
+                    {!['unemploymentRate', 'm1', 'm2'].includes(key) && ' (₹ Crores)'}
+                  </label>
+                  <Input
+                    type="number"
+                    name={key}
+                    value={value}
+                    onChange={handleInputChange}
+                    placeholder={`Enter ${key.replace(/([A-Z])/g, ' $1').toLowerCase()}`}
+                    step={key === 'unemploymentRate' ? "0.1" : "1"}
+                    className="text-lg py-6"
+                  />
+                </div>
+              ))}
             </div>
 
             <Button 
               size="lg" 
               className="w-full bg-primary hover:bg-primary/90 py-8 text-lg"
               onClick={calculateGDP}
+              disabled={isLoading}
             >
               <Calculator className="mr-3 h-5 w-5" />
-              Calculate GDP
+              {isLoading ? "Calculating..." : "Calculate GDP"}
             </Button>
+
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 p-4 bg-red-100 text-red-700 rounded-xl border border-red-200"
+              >
+                {error}
+              </motion.div>
+            )}
 
             {result !== null && (
               <motion.div
@@ -174,6 +168,9 @@ const GdpCalculator = () => {
                 <h3 className="text-xl font-semibold mb-2 text-primary">Estimated GDP</h3>
                 <p className="text-4xl font-bold text-primary">
                   ₹{result.toLocaleString()} Crores
+                </p>
+                <p className="mt-2 text-sm text-primary/80">
+                  Model used: {result === 14000 ? "Fallback calculation" : "AI Prediction"}
                 </p>
               </motion.div>
             )}
