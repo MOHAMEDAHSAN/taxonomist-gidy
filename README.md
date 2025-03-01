@@ -54,8 +54,10 @@ The app should now be running at localhost.
 
 ![image](https://github.com/user-attachments/assets/131cbe42-a835-4bfa-82fe-df959c289bc2)
 
+![Screenshot 2025-03-01 102650](https://github.com/user-attachments/assets/5fd23a60-c568-4319-82bc-5dfb68de773a)
+![Screenshot 2025-03-01 102700](https://github.com/user-attachments/assets/3dc4a74e-e310-4792-99df-c3d6b9e0c2e7)
 
-![image](https://github.com/user-attachments/assets/20f70e82-211a-40fd-a2a4-c5d3e9241e50)
+
 
 
 
