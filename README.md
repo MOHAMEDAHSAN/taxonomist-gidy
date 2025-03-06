@@ -5,13 +5,9 @@
 Taxonomist is a machine learning-powered web application that helps policymakers and analysts evaluate the potential success of tax policies based on economic indicators.
 
 **Disclaimer:** Since the dataset/features are still extending we have only depicted part of the solution and the idea . This is an long term project idea and in working. Thus, this isnt the final output 
+
 ## 🚀 Live Prototype  
-[https://taxonomist-analyzer.vercel.app/](https://taxonomist-gidy.vercel.app/)
-
----
-
-## Google Colab (Model Link)
-https://colab.research.google.com/drive/1VM9ilhSLTPNncNurxLD6CSqtQpC0gjN7?usp=sharing
+https://taxonomist-gidy.vercel.app/
 
 ---
 
@@ -43,6 +39,17 @@ npm install
 ### 4️⃣ Start the Development Server  
 ```sh
 npm run dev
+```
+
+### 5️⃣ Run the Investment Allocation Model
+```sh
+python backend/investment_app.py
+
+```
+
+### 6️⃣ Run the GDP Prediction Model
+```sh
+python backend/app.py
 ```
 
 The app should now be running at localhost.  
